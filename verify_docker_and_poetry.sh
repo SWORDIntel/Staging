@@ -31,12 +31,28 @@ check_poetry() {
   cd "$TMP"
   poetry new checktest >/dev/null 2>&1 || die "Poetry failed to create project"
   cd checktest
-  poetry add pendulum@latest >/dev/null 2>&1 || die "Failed to add pendulum package"
-  poetry run python3 -c 'import pendulum; print(pendulum.now())' >/dev/null 2>&1 || die "Failed to run pendulum inside Poetry virtualenv"
+
+  if poetry add pendulum@latest >/dev/null 2>&1; then
+    ok "Pendulum package installed via Poetry"
+  else
+    # Check if pendulum is already listed in poetry.lock or pyproject.toml
+    if grep -q 'pendulum' poetry.lock 2>/dev/null || grep -q 'pendulum' pyproject.toml; then
+      ok "Pendulum already present, skipping add"
+    else
+      die "Failed to add pendulum package and it's missing"
+    fi
+  fi
+
+  if poetry run python3 -c 'import pendulum; print(pendulum.now())' >/dev/null 2>&1; then
+    ok "Poetry: virtualenv and package install OK"
+  else
+    die "Failed to run pendulum inside Poetry virtualenv"
+  fi
+
   cd /
   rm -rf "$TMP"
-  ok "Poetry: virtualenv and package install OK"
 }
+
 
 # ─────────────────────────────────────────────────────────────────────
 # TUI Menu
