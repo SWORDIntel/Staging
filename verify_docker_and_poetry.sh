@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
-# verify_docker_poetry.sh – Post-reboot diagnostic for Docker and Poetry
-# Provides a basic TUI menu for selective checks
+# verify_docker_poetry.sh – Post-reboot Docker & Poetry diagnostic with self-healing
 
 set -euo pipefail
 
 info() { printf '\e[1;34m[INFO]\e[0m  %s\n' "$*"; }
 ok()   { printf '\e[1;32m[ OK ]\e[0m  %s\n' "$*"; }
+warn() { printf '\e[1;33m[WARN]\e[0m %s\n' "$*"; }
 die()  { printf '\e[1;31m[FAIL]\e[0m  %s\n' "$*"; exit 1; }
+
+fix_poetry_permissions() {
+  warn "Detected permission error on Poetry cache – attempting auto-fix"
+  sudo chown -R "$USER:$USER" ~/.cache/pypoetry
+  ok "Ownership of ~/.cache/pypoetry repaired"
+}
 
 check_docker() {
   info "1. Checking Docker socket and hello-world"
@@ -35,11 +41,18 @@ check_poetry() {
   if poetry add pendulum@latest >/dev/null 2>&1; then
     ok "Pendulum package installed via Poetry"
   else
-    # Check if pendulum is already listed in poetry.lock or pyproject.toml
-    if grep -q 'pendulum' poetry.lock 2>/dev/null || grep -q 'pendulum' pyproject.toml; then
-      ok "Pendulum already present, skipping add"
+    warn "Initial poetry add failed – checking for permission problems"
+    if poetry add pendulum 2>&1 | grep -q 'Permission denied'; then
+      fix_poetry_permissions
+      # Retry once after fix
+      if poetry add pendulum@latest >/dev/null 2>&1; then
+        ok "Pendulum package installed after fixing permissions"
+      else
+        die "Failed to add pendulum package even after permission fix"
+      fi
     else
-      die "Failed to add pendulum package and it's missing"
+      # No permission issue, some other reason
+      die "Poetry add pendulum failed for unknown reason"
     fi
   fi
 
@@ -52,7 +65,6 @@ check_poetry() {
   cd /
   rm -rf "$TMP"
 }
-
 
 # ─────────────────────────────────────────────────────────────────────
 # TUI Menu
