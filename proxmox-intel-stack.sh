@@ -46,21 +46,23 @@ apt install -y \
   libgl1-mesa-dri libglx-mesa0
 
 # ------------------------------------------------------------ #
-log "Wi‑Fi & Bluetooth stack (no conflicting firmware packages)"
+log "Wi‑Fi & Bluetooth (no firmware-* packages)"
 apt install -y bluez blueman
 
-echo 'options iwlwifi 11n_disable=1 swcrypto=1' \
-  >/etc/modprobe.d/iwlwifi.conf
-modprobe -r iwlwifi || true
-modprobe  iwlwifi
+# Only try to reload if nothing is using the interface
+if ! lsof /lib/modules/$(uname -r)/kernel/drivers/net/wireless/intel/iwlwifi/*.ko 2>/dev/null; then
+  modprobe -r iwlwifi || true
+  modprobe  iwlwifi
+else
+  warn "iwlwifi busy; skip reload (will apply after reboot)"
+fi
 # ------------------------------------------------------------ #
 log "Audio stack (Realtek / Intel SOF)"
-apt install -y alsa-utils pulseaudio pavucontrol sof-firmware
+apt install -y alsa-utils pulseaudio pavucontrol firmware-sof-signed
 cat >/etc/modules-load.d/audio.conf <<'EOF'
 snd-hda-intel
 snd-sof-pci
 EOF
-
 # ------------------------------------------------------------ #
 log "Intel Meteor‑Lake NPU enablement"
 cat >/etc/modprobe.d/intel-npu.conf <<'EOF'
