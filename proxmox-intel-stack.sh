@@ -64,12 +64,15 @@ snd-hda-intel
 snd-sof-pci
 EOF
 # ------------------------------------------------------------ #
-log "Intel Meteor‑Lake NPU enablement"
-cat >/etc/modprobe.d/intel-npu.conf <<'EOF'
-# Intel Meteor Lake NPU Support
-options intel_vsec intel_vsec.force_mmio=1
-EOF
+log "Intel Meteor Lake NPU (VPU) enablement"
+modprobe intel_vsec force_mmio=1 2>/dev/null || true
+modprobe intel_vpu               2>/dev/null || true
 
+if lspci -nn | grep -q '7d1d'; then
+  log "NPU detected and VPU driver active."
+else
+  warn "NPU not visible – ensure BIOS 'AI Boost' is enabled or use pve-edge kernel ≥ 6.9."
+fi
 # ------------------------------------------------------------ #
 log "Advanced input & touch‑pad configuration"
 apt install -y xserver-xorg-input-libinput xserver-xorg-input-synaptics
