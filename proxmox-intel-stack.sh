@@ -46,18 +46,13 @@ apt install -y \
   libgl1-mesa-dri libglx-mesa0
 
 # ------------------------------------------------------------ #
-log "Wi‑Fi, Bluetooth & firmware blobs (Proxmox‑friendly)"
-apt install -y \
-  firmware-iwlwifi \
-  firmware-intel-sound \
-  firmware-realtek \
-  bluez blueman
+log "Wi‑Fi & Bluetooth stack (no conflicting firmware packages)"
+apt install -y bluez blueman
 
 echo 'options iwlwifi 11n_disable=1 swcrypto=1' \
   >/etc/modprobe.d/iwlwifi.conf
 modprobe -r iwlwifi || true
 modprobe  iwlwifi
-
 # ------------------------------------------------------------ #
 log "Audio stack (Realtek / Intel SOF)"
 apt install -y alsa-utils pulseaudio pavucontrol sof-firmware
