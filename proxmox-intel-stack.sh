@@ -7,14 +7,17 @@ set -euo pipefail
 log() { printf '\e[1;32m[✓] %s\e[0m\n' "$*"; }
 warn(){ printf '\e[1;33m[!] %s\e[0m\n' "$*"; }
 
-# ------------------------------------------------------------ #
-log "System update & essential build chain"
+# --- Smart Proxmox header pull ---------------------------------------------
 apt update && apt upgrade -y
-apt install -y build-essential linux-headers-$(uname -r) \
+HDR_PKG="pve-headers-$(uname -r)"
+if ! apt-cache show "$HDR_PKG" >/dev/null 2>&1; then
+    HDR_PKG="pve-headers-$(uname -r | cut -d. -f1,2)"   # e.g. pve-headers-6.8
+fi
+apt install -y build-essential "$HDR_PKG" \
                git wget curl pciutils hwdata mokutil \
                intel-gpu-tools vulkan-tools vainfo clinfo \
                hwinfo lshw dmidecode i2c-tools
-
+log "System update & essential build chain"
 # ------------------------------------------------------------ #
 log "GPU / VAAPI / Vulkan / OpenCL stack"
 apt install -y intel-media-va-driver-non-free intel-opencl-icd \
