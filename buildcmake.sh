@@ -1,16 +1,25 @@
-# 1. Download & unpack
-wget https://github.com/Kitware/CMake/releases/download/v3.30.1/cmake-3.30.1.tar.gz
-tar -xzf cmake-3.30.1.tar.gz
-cd cmake-3.30.1
+# 1) Remove any leftover CMake bits in /usr/local
+sudo rm -f /usr/local/bin/{cmake,ccmake,ctest,cpack}
+sudo rm -rf /usr/local/share/cmake-3.*
 
-# 2. Bootstrap & build with 20 jobs and -march=native
-./bootstrap -- -DCMAKE_USE_OPENSSL=ON
-make -j20 \
-     CFLAGS="-O3 -march=native" \
-     CXXFLAGS="-O3 -march=native"
+# 2) Go back to your 3.30.1 source dir
+cd ~/Documents/GitHub/cmake-3.30.1
 
-# 3. Install
+# 3) Clean any previous build outputs (just in case)
+make clean || true
+
+# 4) Bootstrap with /usr/local prefix
+./bootstrap --prefix=/usr/local -- -DCMAKE_USE_OPENSSL=ON
+
+# 5) Build using all 20 cores & native flags
+make -j20 CFLAGS="-march=native -O2" CXXFLAGS="-march=native -O2"
+
+# 6) Install into /usr/local
 sudo make install
 
-# 4. Verify
-cmake --version   # should show 3.30.1
+# 7) Refresh your shell’s command cache
+hash -r
+
+# 8) Verify the new CMake is in place
+which cmake       # should print /usr/local/bin/cmake
+cmake --version   # should now show 3.30.1
